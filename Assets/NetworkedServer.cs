@@ -70,6 +70,86 @@ public class NetworkedServer : MonoBehaviour
     {
         Debug.Log("msg recieved = " + msg + ".  connection id = " + id);
 
+        //Split message by comma, allowing signifiers to be read.
+        string[] csv = msg.Split(',');
+
+        int stateSignifier = int.Parse(csv[0]);
+
+        //Create new account.
+        if(stateSignifier == ClientToServerStateSignifiers.Account)
+        {
+            int accountSignifier = int.Parse(csv[1]);
+
+            if(accountSignifier == ClientToServerAccountSignifiers.CreateAccount)
+            {
+                Debug.Log("Create Account");
+
+                string n = csv[2];
+                string p = csv[3];
+                string gameID = csv[4];
+                bool nameInUse = false;
+
+                foreach(PlayerAccount pa in playerAccounts)
+                {
+                    if (pa.username == n)
+                    {
+                        nameInUse = true;
+                        break;
+                    }
+                }
+
+                if(nameInUse)
+                {
+                    //Name in use, account cannot be created.
+                    SendMessageToClient(ServerToClientSignifiers.AccountCreationFailed + "", id); 
+                }
+
+                else if(!nameInUse)
+                {
+                    //Name not in use, create account & add to list.
+                    PlayerAccount newAccount = new PlayerAccount(n, p, int.Parse(gameID));
+                    playerAccounts.AddLast(newAccount);
+                    SendMessageToClient(ServerToClientSignifiers.AccountCreationComplete + "", id);
+                }
+            }
+
+            else if(accountSignifier == ClientToServerAccountSignifiers.Login)
+            {
+                Debug.Log("Login to account");
+                string n = csv[2];
+                string p = csv[3];
+                string gameID = csv[4];
+                bool accountFound = false;
+
+                //Check for login info match.
+                foreach(PlayerAccount pa in playerAccounts)
+                {
+                    //Check for username match.
+                    if(pa.username == n)
+                    {
+                        //Check for password match.
+                        if(pa.password == p)
+                        {
+                            //Username and password match. Login
+                            accountFound = true;
+                            break;
+                        }
+                    }
+                }
+
+                //Account found, proceed to login to game room specified.
+                if(accountFound)
+                {
+
+                }
+
+                //Account not found, login failed.
+                else if (!accountFound)
+                {
+
+                }
+            }
+        }
        
     }
 
@@ -90,7 +170,16 @@ public class PlayerAccount
     }
 }
 
-public static class ClientToServerSignifiers
+public static class ClientToServerStateSignifiers
+{
+    public const int Account = 1;
+
+    public const int Game = 2;
+
+    public const int Spectate = 3;
+}
+
+public static class ClientToServerAccountSignifiers
 {
     public const int CreateAccount = 1;
 
