@@ -4,7 +4,7 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 using System.IO;
-using UnityEngine.UI;
+using UnityEngine.UIElements;
 
 public class NetworkedServer : MonoBehaviour
 {
@@ -74,5 +74,37 @@ public class NetworkedServer : MonoBehaviour
     }
 
   
+}
+
+public class PlayerAccount
+{
+    public string username;
+    public string password;
+    public int userID;
+
+    public PlayerAccount(string name, string pass, int idNum)
+    {
+        username = name;
+        password = pass;
+        userID = idNum;
+    }
+}
+
+public static class ClientToServerSignifiers
+{
+    public const int CreateAccount = 1;
+
+    public const int Login = 2;
+}
+
+public static class ServerToClientSignifiers
+{
+    public const int LoginComplete = 1;
+
+    public const int LoginFailed = 2;
+
+    public const int AccountCreationComplete = 3;
+
+    public const int AccountCreationFailed = 4;
 }
 
