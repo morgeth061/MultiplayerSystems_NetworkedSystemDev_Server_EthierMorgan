@@ -16,13 +16,13 @@ public class NetworkedServer : MonoBehaviour
 
     LinkedList<PlayerAccount> playerAccounts;
 
-    PlayerAccount temp1;
-    PlayerAccount temp2;
-    PlayerAccount temp3;
+    PlayerAccount temp1 = null;
+    PlayerAccount temp2 = null;
+    PlayerAccount temp3 = null;
 
-    GameRoom room1;
-    GameRoom room2;
-    GameRoom room3;
+    GameRoom room1 = null;
+    GameRoom room2 = null;
+    GameRoom room3 = null;
 
     bool room1InUse = false;
     bool room2InUse = false;
@@ -166,9 +166,11 @@ public class NetworkedServer : MonoBehaviour
                             temp1 = thisPlayer;
                             thisPlayer = null;
                         }
-                        else if(temp1 != null && !room1InUse)
+                        else if(temp1 != null && thisPlayer != null && !room1InUse)
                         {
                             //Player 2 connects. Begin game.
+                            Debug.Log(temp1.username + " " + thisPlayer.username);
+
                             room1 = new GameRoom(temp1, thisPlayer);
                             //Initialize game for P1 and P2
                             SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.GameInitialize, temp1.playerID);
@@ -343,8 +345,8 @@ public class PlayerAccount
 
 public class GameRoom
 {
-    public PlayerAccount player1;
-    public PlayerAccount player2;
+    public PlayerAccount player1 = null;
+    public PlayerAccount player2 = null;
 
     public bool P1Turn;
 
@@ -366,19 +368,16 @@ public class GameRoom
 
         P1Turn = true;
 
-        TopLeft.status = 0;
-        TopMiddle.status = 0;
-        TopRight.status = 0;
-        MiddleLeft.status = 0;
-        Middle.status = 0;
-        MiddleRight.status = 0;
-        BottomLeft.status = 0;
-        BottomMiddle.status = 0;
-        BottomRight.status = 0;
+        TopLeft = new GameTile(0);
+        TopMiddle = new GameTile(0);
+        TopRight = new GameTile(0);
+        MiddleLeft = new GameTile(0);
+        Middle = new GameTile(0);
+        MiddleRight = new GameTile(0);
+        BottomLeft = new GameTile(0);
+        BottomMiddle = new GameTile(0);
+        BottomRight = new GameTile(0);
     }
-
-   
-
 }
 
 public class GameTile
@@ -388,6 +387,10 @@ public class GameTile
     //1 = X
     //2 = O
     public int status;
+    public GameTile(int tileStatus)
+    {
+        status = tileStatus;
+    }
 }
 
 public static class ClientToServerStateSignifiers
