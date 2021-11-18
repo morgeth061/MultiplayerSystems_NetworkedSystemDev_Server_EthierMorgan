@@ -279,6 +279,37 @@ public class NetworkedServer : MonoBehaviour
                 }
                 
             }
+
+            if (gameSignifier == ClientToServerGameSignifiers.Message)
+            {
+                string message = csv[2];
+
+                if (room1InUse) //Check room 1.
+                {
+                    if(room1.player1.playerID == id || room1.player2.playerID == id) //Sent from room 1
+                    {
+                        SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.Message + "," + message, room1.player1.playerID);
+                        SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.Message + "," + message, room1.player2.playerID);
+                    }
+                }
+                if (room2InUse) //Check room 2.
+                {
+                    if (room2.player1.playerID == id || room2.player2.playerID == id) //Sent from room 2
+                    {
+                        SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.Message + "," + message, room2.player1.playerID);
+                        SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.Message + "," + message, room2.player2.playerID);
+                    }
+                }
+                if (room3InUse) //Check room 3.
+                {
+                    if (room3.player1.playerID == id || room3.player2.playerID == id) //Sent from room 3
+                    {
+                        SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.Message + "," + message, room3.player1.playerID);
+                        SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.Message + "," + message, room3.player2.playerID);
+                    }
+                }
+
+            }
         }
     }
 
@@ -583,6 +614,8 @@ public static class ClientToServerGameSignifiers
     public const int ChoiceMade = 1;
 
     public const int ResetGame = 2;
+
+    public const int Message = 3;
 }
 
 public static class ServerToClientStateSignifiers
@@ -590,6 +623,7 @@ public static class ServerToClientStateSignifiers
     public const int Account = 1;
 
     public const int Game = 2;
+
 }
 
 public static class ServerToClientAccountSignifiers
@@ -612,6 +646,8 @@ public static class ServerToClientGameSignifiers
     public const int OpponentWon = 3;
 
     public const int RefreshUI = 4;
+
+    public const int Message = 5;
 
     public const int GameInitialize = 9;
 
