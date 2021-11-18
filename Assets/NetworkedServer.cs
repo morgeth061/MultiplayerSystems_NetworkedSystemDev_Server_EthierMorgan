@@ -16,6 +16,18 @@ public class NetworkedServer : MonoBehaviour
 
     LinkedList<PlayerAccount> playerAccounts;
 
+    PlayerAccount temp1;
+    PlayerAccount temp2;
+    PlayerAccount temp3;
+
+    GameRoom room1;
+    GameRoom room2;
+    GameRoom room3;
+
+    bool room1InUse = false;
+    bool room2InUse = false;
+    bool room3InUse = false;
+
     // Start is called before the first frame update
     void Start()
     { 
@@ -56,6 +68,21 @@ public class NetworkedServer : MonoBehaviour
             case NetworkEventType.DisconnectEvent:
                 Debug.Log("Disconnection, " + recConnectionID);
                 break;
+        }
+
+        //Game Loop.
+
+        if(room1InUse)
+        {
+            GameLoop(room1);
+        }
+        if(room2InUse)
+        {
+            GameLoop(room2);
+        }
+        if(room3InUse)
+        {
+            GameLoop(room3);
         }
     }
 
@@ -107,7 +134,7 @@ public class NetworkedServer : MonoBehaviour
                 else if(!nameInUse)
                 {
                     //Name not in use, create account & add to list.
-                    PlayerAccount newAccount = new PlayerAccount(n, p, int.Parse(gameID));
+                    PlayerAccount newAccount = new PlayerAccount(n, p, int.Parse(gameID), id);
                     playerAccounts.AddLast(newAccount);
                     SendMessageToClient(ServerToClientStateSignifiers.Account + "," + ServerToClientAccountSignifiers.AccountCreationComplete + "", id);
                 }
@@ -116,10 +143,12 @@ public class NetworkedServer : MonoBehaviour
             else if(accountSignifier == ClientToServerAccountSignifiers.Login)
             {
                 Debug.Log("Login to account");
-                string n = csv[2];
-                string p = csv[3];
-                string gameID = csv[4];
+                string n = csv[2]; //name
+                string p = csv[3]; //password
+                string g = csv[4]; //game ID
                 bool accountFound = false;
+
+                PlayerAccount thisPlayer = null;
 
                 //Check for login info match.
                 foreach(PlayerAccount pa in playerAccounts)
@@ -132,6 +161,7 @@ public class NetworkedServer : MonoBehaviour
                         {
                             //Username and password match. Login
                             accountFound = true;
+                            thisPlayer = pa;
                             break;
                         }
                     }
@@ -142,6 +172,38 @@ public class NetworkedServer : MonoBehaviour
                 {
                     Debug.Log("Account Found");
                     SendMessageToClient(ServerToClientStateSignifiers.Account + "," + ServerToClientAccountSignifiers.LoginComplete + "", id);
+
+                    if(g == "1")
+                    {
+                        if(temp1 == null)
+                        {
+                            //Player 1 connects. Wait for player 2.
+                            temp1 = thisPlayer;
+                            thisPlayer = null;
+                        }
+                        else if(temp1 != null && !room1InUse)
+                        {
+                            //Player 2 connects. Begin game.
+                            room1 = new GameRoom(temp1, thisPlayer);
+                            //Notify P1 that it's their turn.
+                            SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.CurrentTurn + "," + room1.TopLeft + "," + room1.TopMiddle + "," + room1.TopRight + "," + room1.MiddleLeft + "," + room1.Middle + "," + room1.MiddleRight + "," + room1.BottomLeft + "," + room1.BottomMiddle + "," + room1.BottomRight + "", temp1.playerID);
+                            temp1 = null;
+                            thisPlayer = null;
+                            room1InUse = true;
+                        }
+                        else if(temp1 != null && room1InUse)
+                        {
+                            //Player is spectator for room 1.
+                        }
+                    }
+                    else if (g == "2")
+                    {
+
+                    }
+                    else if (g == "3")
+                    {
+
+                    }
                 }
 
                 //Account not found, login failed.
@@ -154,6 +216,26 @@ public class NetworkedServer : MonoBehaviour
        
     }
 
+    public void GameLoop(GameRoom room)
+    {
+        //Player1 (X)
+        if(room.P1Turn)
+        {
+
+        }
+        else //Player2 (O)
+        {
+
+        }
+    }
+
+    //Alternate player turns.
+    public void ChangeTurn(PlayerAccount swapTo, GameRoom room)
+    {
+        SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.CurrentTurn + "," + room.TopLeft + "," + room.TopMiddle + "," + room.TopRight + "," + room.MiddleLeft + "," + room.Middle + "," + room.MiddleRight + "," + room.BottomLeft + "," + room.BottomMiddle + "," + room.BottomRight + "", swapTo.playerID);
+        room.P1Turn = !room.P1Turn;
+    }
+
   
 }
 
@@ -161,13 +243,15 @@ public class PlayerAccount
 {
     public string username;
     public string password;
-    public int userID;
+    public int gameID;
+    public int playerID;
 
-    public PlayerAccount(string name, string pass, int idNum)
+    public PlayerAccount(string name, string pass, int gameIDNum, int playerIDNum)
     {
         username = name;
         password = pass;
-        userID = idNum;
+        gameID = gameIDNum;
+        playerID = playerIDNum;
     }
 }
 
@@ -175,6 +259,49 @@ public class GameRoom
 {
     public PlayerAccount player1;
     public PlayerAccount player2;
+
+    public bool P1Turn;
+
+    public GameTile TopLeft;
+    public GameTile TopMiddle;
+    public GameTile TopRight;
+    public GameTile MiddleLeft;
+    public GameTile Middle;
+    public GameTile MiddleRight;
+    public GameTile BottomLeft;
+    public GameTile BottomMiddle;
+    public GameTile BottomRight;
+
+    public GameRoom(PlayerAccount xPlayer, PlayerAccount oPlayer)
+    {
+        player1 = xPlayer;
+
+        player2 = oPlayer;
+
+        P1Turn = true;
+
+        TopLeft.status = 0;
+        TopMiddle.status = 0;
+        TopRight.status = 0;
+        MiddleLeft.status = 0;
+        Middle.status = 0;
+        MiddleRight.status = 0;
+        BottomLeft.status = 0;
+        BottomMiddle.status = 0;
+        BottomRight.status = 0;
+    }
+
+   
+
+}
+
+public class GameTile
+{
+    //Status
+    //0 = Unclaimed
+    //1 = X
+    //2 = O
+    public int status;
 }
 
 public static class ClientToServerStateSignifiers
@@ -195,6 +322,11 @@ public static class ClientToServerAccountSignifiers
     public const int Login = 2;
 }
 
+public static class ClientToServerGameSignifiers
+{
+    public const int ChoiceMade = 1;
+}
+
 public static class ServerToClientStateSignifiers
 {
     public const int Account = 1;
@@ -211,5 +343,15 @@ public static class ServerToClientAccountSignifiers
     public const int AccountCreationComplete = 3;
 
     public const int AccountCreationFailed = 4;
+}
+
+public static class ServerToClientGameSignifiers
+{
+    public const int CurrentTurn = 1;
+
+    public const int Player1Won = 2;
+
+    public const int Player2Won = 3;
+
 }
 
