@@ -188,11 +188,11 @@ public class NetworkedServer : MonoBehaviour
                     }
                     else if (g == "2")
                     {
-
+                        //Implementation for room 2 setup.
                     }
                     else if (g == "3")
                     {
-
+                        //Implementation for room 3 setup.
                     }
                 }
 
@@ -214,69 +214,96 @@ public class NetworkedServer : MonoBehaviour
                 if(room1InUse) //Check room 1.
                 {
                     //Player1 (X)
-                    if(room1.P1Turn && room1.player1.playerID == id)
+                    if (room1.P1Turn && room1.player1.playerID == id)
                     {
-                        Debug.Log("G1: Player 1 chose square " + choice);
-                        UpdateBoard(room1, choice, 1);
-                        SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.RefreshUI + "," + room1.TopLeft.status + "," + room1.TopMiddle.status + "," + room1.TopRight.status + "," + room1.MiddleLeft.status + "," + room1.Middle.status + "," + room1.MiddleRight.status + "," + room1.BottomLeft.status + "," + room1.BottomMiddle.status + "," + room1.BottomRight.status + "", room1.player1.playerID);
-                        ChangeTurn(room1.player2, room1);
+                        GameLoop(choice, room1, room1.player1);
                     }
-                    else if(room1.P1Turn == false && room1.player2.playerID == id) //Player2 (O)
+                    else if (room1.P1Turn == false && room1.player2.playerID == id) //Player2 (O)
                     {
-                        Debug.Log("G1: Player 2 chose square " + choice);
-                        UpdateBoard(room1, choice, 2);
-                        SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.RefreshUI + "," + room1.TopLeft.status + "," + room1.TopMiddle.status + "," + room1.TopRight.status + "," + room1.MiddleLeft.status + "," + room1.Middle.status + "," + room1.MiddleRight.status + "," + room1.BottomLeft.status + "," + room1.BottomMiddle.status + "," + room1.BottomRight.status + "", room1.player2.playerID);
-                        ChangeTurn(room1.player1, room1);
+                        GameLoop(choice, room1, room1.player2);
                     }
                 }
                 if(room2InUse) //Check room 2.
                 {
                     //Player1 (X)
-                    if(room2.P1Turn && room2.player1.playerID == id)
+                    if (room2.P1Turn && room2.player1.playerID == id)
                     {
-                        Debug.Log("G2: Player 1 chose square " + choice);
-                        UpdateBoard(room2, choice, 1);
-                        ChangeTurn(room2.player2, room2);
+                        GameLoop(choice, room2, room2.player1);
                     }
-                    else if(room2.P1Turn == false && room2.player2.playerID == id) //Player2 (O)
+                    else if (room2.P1Turn == false && room2.player2.playerID == id) //Player2 (O)
                     {
-                        Debug.Log("G2: Player 2 chose square " + choice);
-                        UpdateBoard(room2, choice, 2);
-                        ChangeTurn(room2.player1, room2);
+                        GameLoop(choice, room2, room2.player2);
                     }
                 }
                 if(room3InUse) //Check room 3.
                 {
                     //Player1 (X)
-                    if(room3.P1Turn && room3.player1.playerID == id)
+                    if (room3.P1Turn && room3.player1.playerID == id)
                     {
-                        Debug.Log("G3: Player 1 chose square " + choice);
-                        UpdateBoard(room3, choice, 1);
-                        ChangeTurn(room3.player2, room3);
+                        GameLoop(choice, room3, room3.player1);
                     }
-                    else if(room3.P1Turn == false && room3.player2.playerID == id) //Player2 (O)
+                    else if (room3.P1Turn == false && room3.player2.playerID == id) //Player2 (O)
                     {
-                        Debug.Log("G3: Player 2 chose square " + choice);
-                        UpdateBoard(room3, choice, 2);
-                        ChangeTurn(room3.player1, room3);
+                        GameLoop(choice, room3, room3.player2);
                     }
                 }
             }
-            
         }
     }
 
-    public void GameLoop(GameRoom room)
+    //Runs game logic.
+    public void GameLoop(int choice, GameRoom room, PlayerAccount player)
     {
-        //Player1 (X)
-        if(room.P1Turn)
+        Debug.Log("Player " + player.username + " chose square " + choice);
+        //Update game board with player choice
+        UpdateBoard(room, choice, 1);
+        //Update player 1's UI
+        SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.RefreshUI + "," + room.TopLeft.status + "," + room.TopMiddle.status + "," + room.TopRight.status + "," + room.MiddleLeft.status + "," + room.Middle.status + "," + room.MiddleRight.status + "," + room.BottomLeft.status + "," + room.BottomMiddle.status + "," + room.BottomRight.status + "", player.playerID);
+        //Win Check
+        int winCheck = room.CheckGameWin();
+        if (winCheck != 0) //If win condition met
         {
-
+            if (winCheck == 1) //Player 1 win
+            {
+                SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.YouWon + "," + room.player1.username + " won!", room.player1.playerID);
+                SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.OpponentWon + "," + room.player1.username + " won!", room.player2.playerID);
+            }
+            else if (winCheck == 2) //Player 2 win
+            {
+                SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.OpponentWon + "," + room.player2.username + " won!", room.player1.playerID);
+                SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.YouWon + "," + room.player2.username + " won!", room.player2.playerID);
+            }
         }
-        else //Player2 (O)
+        else //No win, continue game
         {
-
+            if(player.playerID == room.player1.playerID)
+            {
+                ChangeTurn(room.player2, room);
+            }
+            else if(player.playerID == room.player2.playerID)
+            {
+                ChangeTurn(room.player1, room);
+            }
         }
+    }
+
+    //Resets game to default settings
+    public void ResetGame(GameRoom room)
+    {
+        //Reset game to base values
+        room.P1Turn = true;
+        room.TopLeft.status = 0;
+        room.TopMiddle.status = 0;
+        room.TopRight.status = 0;
+        room.MiddleLeft.status = 0;
+        room.Middle.status = 0;
+        room.MiddleRight.status = 0;
+        room.BottomLeft.status = 0;
+        room.BottomMiddle.status = 0;
+        room.BottomRight.status = 0;
+
+        SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.RefreshUI + "," + room.TopLeft.status + "," + room.TopMiddle.status + "," + room.TopRight.status + "," + room.MiddleLeft.status + "," + room.Middle.status + "," + room.MiddleRight.status + "," + room.BottomLeft.status + "," + room.BottomMiddle.status + "," + room.BottomRight.status + "", room.player1.playerID);
+        SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.RefreshUI + "," + room.TopLeft.status + "," + room.TopMiddle.status + "," + room.TopRight.status + "," + room.MiddleLeft.status + "," + room.Middle.status + "," + room.MiddleRight.status + "," + room.BottomLeft.status + "," + room.BottomMiddle.status + "," + room.BottomRight.status + "", room.player2.playerID);
     }
 
     public void UpdateBoard(GameRoom room, int choice, int playerNumber)
@@ -325,8 +352,6 @@ public class NetworkedServer : MonoBehaviour
         SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.CurrentTurn + "," + room.TopLeft.status + "," + room.TopMiddle.status + "," + room.TopRight.status + "," + room.MiddleLeft.status + "," + room.Middle.status + "," + room.MiddleRight.status + "," + room.BottomLeft.status + "," + room.BottomMiddle.status + "," + room.BottomRight.status + "", swapTo.playerID);
         room.P1Turn = !room.P1Turn;
     }
-
-  
 }
 
 public class PlayerAccount
@@ -379,6 +404,108 @@ public class GameRoom
         BottomLeft = new GameTile(0);
         BottomMiddle = new GameTile(0);
         BottomRight = new GameTile(0);
+    }
+
+    public int CheckGameWin()
+    {
+        //Top Row Win
+        if(TopLeft.status == TopMiddle.status && TopMiddle.status == TopRight.status && TopMiddle.status != 0)
+        {
+            if(TopMiddle.status == 1)
+            {
+                return 1;
+            }
+            else if (TopMiddle.status == 2)
+            {
+                return 2;
+            }
+        }
+        //Middle Row Win
+        if (MiddleLeft.status == Middle.status && Middle.status == MiddleRight.status && Middle.status != 0)
+        {
+            if (Middle.status == 1)
+            {
+                return 1;
+            }
+            else if (Middle.status == 2)
+            {
+                return 2;
+            }
+        }
+        //Bottom Row Win
+        if (BottomLeft.status == BottomMiddle.status && BottomMiddle.status == BottomRight.status && BottomMiddle.status != 0)
+        {
+            if (BottomMiddle.status == 1)
+            {
+                return 1;
+            }
+            else if (BottomMiddle.status == 2)
+            {
+                return 2;
+            }
+        }
+        //Left Column Win
+        if (TopLeft.status == MiddleLeft.status && MiddleLeft.status == BottomLeft.status && MiddleLeft.status != 0)
+        {
+            if (MiddleLeft.status == 1)
+            {
+                return 1;
+            }
+            else if (MiddleLeft.status == 2)
+            {
+                return 2;
+            }
+        }
+        //Middle Column Win
+        if (TopMiddle.status == Middle.status && Middle.status == BottomMiddle.status && Middle.status != 0)
+        {
+            if (Middle.status == 1)
+            {
+                return 1;
+            }
+            else if (Middle.status == 2)
+            {
+                return 2;
+            }
+        }
+        //Right Column Win
+        if (TopRight.status == MiddleRight.status && MiddleRight.status == BottomRight.status && MiddleRight.status != 0)
+        {
+            if (MiddleRight.status == 1)
+            {
+                return 1;
+            }
+            else if (MiddleRight.status == 2)
+            {
+                return 2;
+            }
+        }
+        //Left Diagonal Win
+        if (TopLeft.status == Middle.status && Middle.status == BottomRight.status && Middle.status != 0)
+        {
+            if (Middle.status == 1)
+            {
+                return 1;
+            }
+            else if (Middle.status == 2)
+            {
+                return 2;
+            }
+        }
+        //Right Diagonal Win
+        if (TopRight.status == Middle.status && Middle.status == BottomLeft.status && Middle.status != 0)
+        {
+            if (Middle.status == 1)
+            {
+                return 1;
+            }
+            else if (Middle.status == 2)
+            {
+                return 2;
+            }
+        }
+        //No Win
+        return 0;
     }
 }
 
@@ -440,9 +567,9 @@ public static class ServerToClientGameSignifiers
 {
     public const int CurrentTurn = 1;
 
-    public const int Player1Won = 2;
+    public const int YouWon = 2;
 
-    public const int Player2Won = 3;
+    public const int OpponentWon = 3;
 
     public const int RefreshUI = 4;
 
