@@ -101,7 +101,7 @@ public class NetworkedServer : MonoBehaviour
                 if(nameInUse)
                 {
                     //Name in use, account cannot be created.
-                    SendMessageToClient(ServerToClientSignifiers.AccountCreationFailed + "", id); 
+                    SendMessageToClient(ServerToClientStateSignifiers.Account + "," + ServerToClientAccountSignifiers.AccountCreationFailed + "", id); 
                 }
 
                 else if(!nameInUse)
@@ -109,7 +109,7 @@ public class NetworkedServer : MonoBehaviour
                     //Name not in use, create account & add to list.
                     PlayerAccount newAccount = new PlayerAccount(n, p, int.Parse(gameID));
                     playerAccounts.AddLast(newAccount);
-                    SendMessageToClient(ServerToClientSignifiers.AccountCreationComplete + "", id);
+                    SendMessageToClient(ServerToClientStateSignifiers.Account + "," + ServerToClientAccountSignifiers.AccountCreationComplete + "", id);
                 }
             }
 
@@ -140,13 +140,14 @@ public class NetworkedServer : MonoBehaviour
                 //Account found, proceed to login to game room specified.
                 if(accountFound)
                 {
-
+                    Debug.Log("Account Found");
+                    SendMessageToClient(ServerToClientStateSignifiers.Account + "," + ServerToClientAccountSignifiers.LoginComplete + "", id);
                 }
 
                 //Account not found, login failed.
                 else if (!accountFound)
                 {
-
+                    Debug.Log("Account Not Found");
                 }
             }
         }
@@ -170,6 +171,12 @@ public class PlayerAccount
     }
 }
 
+public class GameRoom
+{
+    public PlayerAccount player1;
+    public PlayerAccount player2;
+}
+
 public static class ClientToServerStateSignifiers
 {
     public const int Account = 1;
@@ -177,6 +184,8 @@ public static class ClientToServerStateSignifiers
     public const int Game = 2;
 
     public const int Spectate = 3;
+
+    public const int Other = 9;
 }
 
 public static class ClientToServerAccountSignifiers
@@ -186,7 +195,14 @@ public static class ClientToServerAccountSignifiers
     public const int Login = 2;
 }
 
-public static class ServerToClientSignifiers
+public static class ServerToClientStateSignifiers
+{
+    public const int Account = 1;
+
+    public const int Game = 2;
+}
+
+public static class ServerToClientAccountSignifiers
 {
     public const int LoginComplete = 1;
 
