@@ -15,6 +15,9 @@ public class NetworkedServer : MonoBehaviour
     int socketPort = 5491;
 
     LinkedList<PlayerAccount> playerAccounts;
+    LinkedList<PlayerAccount> room1Spectators;
+    LinkedList<PlayerAccount> room2Spectators;
+    LinkedList<PlayerAccount> room3Spectators;
 
     PlayerAccount temp1 = null;
     PlayerAccount temp2 = null;
@@ -27,6 +30,10 @@ public class NetworkedServer : MonoBehaviour
     bool room1InUse = false;
     bool room2InUse = false;
     bool room3InUse = false;
+
+    bool room1SpectatorsPresent = false;
+    bool room2SpectatorsPresent = false;
+    bool room3SpectatorsPresent = false;
 
     // Start is called before the first frame update
     void Start()
@@ -186,15 +193,69 @@ public class NetworkedServer : MonoBehaviour
                         else if(temp1 != null && room1InUse)
                         {
                             //Player is spectator for room 1.
+                            room1SpectatorsPresent = true;
+                            room1Spectators.AddLast(thisPlayer);
                         }
                     }
                     else if (g == "2")
                     {
-                        //Implementation for room 2 setup.
+                        if (temp2 == null)
+                        {
+                            //Player 1 connects. Wait for player 2.
+                            temp2 = thisPlayer;
+                            thisPlayer = null;
+                        }
+                        else if (temp2 != null && thisPlayer != null && !room2InUse)
+                        {
+                            //Player 2 connects. Begin game.
+                            Debug.Log(temp2.username + " " + thisPlayer.username);
+
+                            room2 = new GameRoom(temp2, thisPlayer);
+                            //Initialize game for P1 and P2
+                            SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.GameInitialize + "," + thisPlayer.username, temp2.playerID);
+                            SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.GameInitialize + "," + temp2.username, thisPlayer.playerID);
+                            //Notify P1 that it's their turn.
+                            SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.CurrentTurn + "," + room2.TopLeft.status + "," + room2.TopMiddle.status + "," + room2.TopRight.status + "," + room2.MiddleLeft.status + "," + room2.Middle.status + "," + room2.MiddleRight.status + "," + room2.BottomLeft.status + "," + room2.BottomMiddle.status + "," + room2.BottomRight.status + "", temp2.playerID);
+                            temp2 = null;
+                            thisPlayer = null;
+                            room2InUse = true;
+                        }
+                        else if (temp2 != null && room2InUse)
+                        {
+                            //Player is spectator for room 2.
+                            room2SpectatorsPresent = true;
+                            room2Spectators.AddLast(thisPlayer);
+                        }
                     }
                     else if (g == "3")
                     {
-                        //Implementation for room 3 setup.
+                        if (temp3 == null)
+                        {
+                            //Player 1 connects. Wait for player 2.
+                            temp3 = thisPlayer;
+                            thisPlayer = null;
+                        }
+                        else if (temp3 != null && thisPlayer != null && !room3InUse)
+                        {
+                            //Player 2 connects. Begin game.
+                            Debug.Log(temp3.username + " " + thisPlayer.username);
+
+                            room3 = new GameRoom(temp3, thisPlayer);
+                            //Initialize game for P1 and P2
+                            SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.GameInitialize + "," + thisPlayer.username, temp3.playerID);
+                            SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.GameInitialize + "," + temp3.username, thisPlayer.playerID);
+                            //Notify P1 that it's their turn.
+                            SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.CurrentTurn + "," + room3.TopLeft.status + "," + room3.TopMiddle.status + "," + room3.TopRight.status + "," + room3.MiddleLeft.status + "," + room3.Middle.status + "," + room3.MiddleRight.status + "," + room3.BottomLeft.status + "," + room3.BottomMiddle.status + "," + room3.BottomRight.status + "", temp3.playerID);
+                            temp3 = null;
+                            thisPlayer = null;
+                            room3InUse = true;
+                        }
+                        else if (temp3 != null && room3InUse)
+                        {
+                            //Player is spectator for room 2.
+                            room3SpectatorsPresent = true;
+                            room3Spectators.AddLast(thisPlayer);
+                        }
                     }
                 }
 
