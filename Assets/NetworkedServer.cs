@@ -173,10 +173,10 @@ public class NetworkedServer : MonoBehaviour
 
                             room1 = new GameRoom(temp1, thisPlayer);
                             //Initialize game for P1 and P2
-                            SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.GameInitialize, temp1.playerID);
-                            SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.GameInitialize, thisPlayer.playerID);
+                            SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.GameInitialize + "," + thisPlayer.username, temp1.playerID);
+                            SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.GameInitialize + "," + temp1.username, thisPlayer.playerID);
                             //Notify P1 that it's their turn.
-                            SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.CurrentTurn + "," + room1.TopLeft + "," + room1.TopMiddle + "," + room1.TopRight + "," + room1.MiddleLeft + "," + room1.Middle + "," + room1.MiddleRight + "," + room1.BottomLeft + "," + room1.BottomMiddle + "," + room1.BottomRight + "", temp1.playerID);
+                            SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.CurrentTurn + "," + room1.TopLeft.status + "," + room1.TopMiddle.status + "," + room1.TopRight.status + "," + room1.MiddleLeft.status + "," + room1.Middle.status + "," + room1.MiddleRight.status + "," + room1.BottomLeft.status + "," + room1.BottomMiddle.status + "," + room1.BottomRight.status + "", temp1.playerID);
                             temp1 = null;
                             thisPlayer = null;
                             room1InUse = true;
@@ -218,12 +218,14 @@ public class NetworkedServer : MonoBehaviour
                     {
                         Debug.Log("G1: Player 1 chose square " + choice);
                         UpdateBoard(room1, choice, 1);
+                        SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.RefreshUI + "," + room1.TopLeft.status + "," + room1.TopMiddle.status + "," + room1.TopRight.status + "," + room1.MiddleLeft.status + "," + room1.Middle.status + "," + room1.MiddleRight.status + "," + room1.BottomLeft.status + "," + room1.BottomMiddle.status + "," + room1.BottomRight.status + "", room1.player1.playerID);
                         ChangeTurn(room1.player2, room1);
                     }
                     else if(room1.P1Turn == false && room1.player2.playerID == id) //Player2 (O)
                     {
                         Debug.Log("G1: Player 2 chose square " + choice);
                         UpdateBoard(room1, choice, 2);
+                        SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.RefreshUI + "," + room1.TopLeft.status + "," + room1.TopMiddle.status + "," + room1.TopRight.status + "," + room1.MiddleLeft.status + "," + room1.Middle.status + "," + room1.MiddleRight.status + "," + room1.BottomLeft.status + "," + room1.BottomMiddle.status + "," + room1.BottomRight.status + "", room1.player2.playerID);
                         ChangeTurn(room1.player1, room1);
                     }
                 }
@@ -320,7 +322,7 @@ public class NetworkedServer : MonoBehaviour
     //Alternate player turns.
     public void ChangeTurn(PlayerAccount swapTo, GameRoom room)
     {
-        SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.CurrentTurn + "," + room.TopLeft + "," + room.TopMiddle + "," + room.TopRight + "," + room.MiddleLeft + "," + room.Middle + "," + room.MiddleRight + "," + room.BottomLeft + "," + room.BottomMiddle + "," + room.BottomRight + "", swapTo.playerID);
+        SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.CurrentTurn + "," + room.TopLeft.status + "," + room.TopMiddle.status + "," + room.TopRight.status + "," + room.MiddleLeft.status + "," + room.Middle.status + "," + room.MiddleRight.status + "," + room.BottomLeft.status + "," + room.BottomMiddle.status + "," + room.BottomRight.status + "", swapTo.playerID);
         room.P1Turn = !room.P1Turn;
     }
 
@@ -441,6 +443,8 @@ public static class ServerToClientGameSignifiers
     public const int Player1Won = 2;
 
     public const int Player2Won = 3;
+
+    public const int RefreshUI = 4;
 
     public const int GameInitialize = 9;
 
