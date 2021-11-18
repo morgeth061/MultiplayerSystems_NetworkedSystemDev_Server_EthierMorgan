@@ -87,11 +87,12 @@ public class NetworkedServer : MonoBehaviour
 
         int stateSignifier = int.Parse(csv[0]);
 
-        //Create new account.
+        //Game not running, login screen.
         if(stateSignifier == ClientToServerStateSignifiers.Account)
         {
             int accountSignifier = int.Parse(csv[1]);
 
+            //Player attempting to create new account.
             if(accountSignifier == ClientToServerAccountSignifiers.CreateAccount)
             {
                 Debug.Log("Create Account");
@@ -125,6 +126,7 @@ public class NetworkedServer : MonoBehaviour
                 }
             }
 
+            //Player attempting to login.
             else if(accountSignifier == ClientToServerAccountSignifiers.Login)
             {
                 Debug.Log("Login to account");
@@ -203,24 +205,26 @@ public class NetworkedServer : MonoBehaviour
                 }
             }
         }
+        
+        //Game currently running.
         else if(stateSignifier == ClientToServerStateSignifiers.Game)
         {
             int gameSignifier = int.Parse(csv[1]);
 
+            //Player has made a choice.
             if(gameSignifier == ClientToServerGameSignifiers.ChoiceMade)
             {
                 int choice = int.Parse(csv[2]);
 
                 if(room1InUse) //Check room 1.
                 {
-                    //Player1 (X)
-                    if (room1.P1Turn && room1.player1.playerID == id)
+                    if (room1.P1Turn && room1.player1.playerID == id) //Room 1 Player1 made choice. (X)
                     {
-                        GameLoop(choice, room1, room1.player1);
+                        GameLoop(choice, room1, room1.player1, 1);
                     }
-                    else if (room1.P1Turn == false && room1.player2.playerID == id) //Player2 (O)
+                    else if (room1.P1Turn == false && room1.player2.playerID == id) //Room 1 Player2 made choice. (O)
                     {
-                        GameLoop(choice, room1, room1.player2);
+                        GameLoop(choice, room1, room1.player2, 2);
                     }
                 }
                 if(room2InUse) //Check room 2.
@@ -228,11 +232,11 @@ public class NetworkedServer : MonoBehaviour
                     //Player1 (X)
                     if (room2.P1Turn && room2.player1.playerID == id)
                     {
-                        GameLoop(choice, room2, room2.player1);
+                        GameLoop(choice, room2, room2.player1, 1);
                     }
                     else if (room2.P1Turn == false && room2.player2.playerID == id) //Player2 (O)
                     {
-                        GameLoop(choice, room2, room2.player2);
+                        GameLoop(choice, room2, room2.player2, 2);
                     }
                 }
                 if(room3InUse) //Check room 3.
@@ -240,23 +244,50 @@ public class NetworkedServer : MonoBehaviour
                     //Player1 (X)
                     if (room3.P1Turn && room3.player1.playerID == id)
                     {
-                        GameLoop(choice, room3, room3.player1);
+                        GameLoop(choice, room3, room3.player1, 1);
                     }
                     else if (room3.P1Turn == false && room3.player2.playerID == id) //Player2 (O)
                     {
-                        GameLoop(choice, room3, room3.player2);
+                        GameLoop(choice, room3, room3.player2, 2);
                     }
                 }
+            }
+
+            //Winning player chooses to replay game.
+            if(gameSignifier == ClientToServerGameSignifiers.ResetGame)
+            {
+                if(room1InUse)
+                {
+                    if(room1.player1.playerID == id || room1.player2.playerID == id)
+                    {
+                        ResetGame(room1);
+                    }
+                }
+                if(room2InUse)
+                {
+                    if (room2.player1.playerID == id || room2.player2.playerID == id)
+                    {
+                        ResetGame(room2);
+                    }
+                }
+                if(room3InUse)
+                {
+                    if (room3.player1.playerID == id || room3.player2.playerID == id)
+                    {
+                        ResetGame(room3);
+                    }
+                }
+                
             }
         }
     }
 
     //Runs game logic.
-    public void GameLoop(int choice, GameRoom room, PlayerAccount player)
+    public void GameLoop(int choice, GameRoom room, PlayerAccount player, int playerNum)
     {
         Debug.Log("Player " + player.username + " chose square " + choice);
         //Update game board with player choice
-        UpdateBoard(room, choice, 1);
+        UpdateBoard(room, choice, playerNum);
         //Update player 1's UI
         SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.RefreshUI + "," + room.TopLeft.status + "," + room.TopMiddle.status + "," + room.TopRight.status + "," + room.MiddleLeft.status + "," + room.Middle.status + "," + room.MiddleRight.status + "," + room.BottomLeft.status + "," + room.BottomMiddle.status + "," + room.BottomRight.status + "", player.playerID);
         //Win Check
@@ -265,11 +296,15 @@ public class NetworkedServer : MonoBehaviour
         {
             if (winCheck == 1) //Player 1 win
             {
+                Debug.Log("Player 1 won");
+                SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.RefreshUI + "," + room.TopLeft.status + "," + room.TopMiddle.status + "," + room.TopRight.status + "," + room.MiddleLeft.status + "," + room.Middle.status + "," + room.MiddleRight.status + "," + room.BottomLeft.status + "," + room.BottomMiddle.status + "," + room.BottomRight.status + "", room.player2.playerID);
                 SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.YouWon + "," + room.player1.username + " won!", room.player1.playerID);
                 SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.OpponentWon + "," + room.player1.username + " won!", room.player2.playerID);
             }
             else if (winCheck == 2) //Player 2 win
             {
+                Debug.Log("Player 2 won");
+                SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.RefreshUI + "," + room.TopLeft.status + "," + room.TopMiddle.status + "," + room.TopRight.status + "," + room.MiddleLeft.status + "," + room.Middle.status + "," + room.MiddleRight.status + "," + room.BottomLeft.status + "," + room.BottomMiddle.status + "," + room.BottomRight.status + "", room.player1.playerID);
                 SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.OpponentWon + "," + room.player2.username + " won!", room.player1.playerID);
                 SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.YouWon + "," + room.player2.username + " won!", room.player2.playerID);
             }
@@ -287,11 +322,11 @@ public class NetworkedServer : MonoBehaviour
         }
     }
 
-    //Resets game to default settings
+    //Resets game to default settings.
     public void ResetGame(GameRoom room)
     {
         //Reset game to base values
-        room.P1Turn = true;
+        room.P1Turn = false; //Set to false as it will flip once ChangeTurn is called
         room.TopLeft.status = 0;
         room.TopMiddle.status = 0;
         room.TopRight.status = 0;
@@ -304,8 +339,11 @@ public class NetworkedServer : MonoBehaviour
 
         SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.RefreshUI + "," + room.TopLeft.status + "," + room.TopMiddle.status + "," + room.TopRight.status + "," + room.MiddleLeft.status + "," + room.Middle.status + "," + room.MiddleRight.status + "," + room.BottomLeft.status + "," + room.BottomMiddle.status + "," + room.BottomRight.status + "", room.player1.playerID);
         SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.RefreshUI + "," + room.TopLeft.status + "," + room.TopMiddle.status + "," + room.TopRight.status + "," + room.MiddleLeft.status + "," + room.Middle.status + "," + room.MiddleRight.status + "," + room.BottomLeft.status + "," + room.BottomMiddle.status + "," + room.BottomRight.status + "", room.player2.playerID);
+
+        ChangeTurn(room.player1, room);
     }
 
+    //Updates game room board based on player choice.
     public void UpdateBoard(GameRoom room, int choice, int playerNumber)
     {
         if (choice == 1) //Top Left
@@ -543,6 +581,8 @@ public static class ClientToServerAccountSignifiers
 public static class ClientToServerGameSignifiers
 {
     public const int ChoiceMade = 1;
+
+    public const int ResetGame = 2;
 }
 
 public static class ServerToClientStateSignifiers
