@@ -50,6 +50,9 @@ public class NetworkedServer : MonoBehaviour
         hostID = NetworkTransport.AddHost(topology, socketPort, null);
 
         playerAccounts = new LinkedList<PlayerAccount>();
+        room1Spectators = new LinkedList<PlayerAccount>();
+        room2Spectators = new LinkedList<PlayerAccount>();
+        room3Spectators = new LinkedList<PlayerAccount>();
     }
 
     // Update is called once per frame
@@ -173,7 +176,7 @@ public class NetworkedServer : MonoBehaviour
 
                     if(g == "1")
                     {
-                        if(temp1 == null)
+                        if(temp1 == null && !room1InUse)
                         {
                             //Player 1 connects. Wait for player 2.
                             temp1 = thisPlayer;
@@ -194,7 +197,7 @@ public class NetworkedServer : MonoBehaviour
                             thisPlayer = null;
                             room1InUse = true;
                         }
-                        else if(temp1 != null && room1InUse)
+                        else if(room1InUse)
                         {
                             //Player is spectator for room 1.
                             room1SpectatorsPresent = true;
@@ -204,7 +207,7 @@ public class NetworkedServer : MonoBehaviour
                     }
                     else if (g == "2")
                     {
-                        if (temp2 == null)
+                        if (temp2 == null && !room2InUse)
                         {
                             //Player 1 connects. Wait for player 2.
                             temp2 = thisPlayer;
@@ -221,7 +224,7 @@ public class NetworkedServer : MonoBehaviour
                             SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.GameInitialize + "," + temp2.username, thisPlayer.playerID);
                             //Notify P1 that it's their turn.
                             SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.CurrentTurn + "," + room2.TopLeft.status + "," + room2.TopMiddle.status + "," + room2.TopRight.status + "," + room2.MiddleLeft.status + "," + room2.Middle.status + "," + room2.MiddleRight.status + "," + room2.BottomLeft.status + "," + room2.BottomMiddle.status + "," + room2.BottomRight.status + "", temp2.playerID);
-                            temp2 = null;
+                            
                             thisPlayer = null;
                             room2InUse = true;
                         }
@@ -235,7 +238,7 @@ public class NetworkedServer : MonoBehaviour
                     }
                     else if (g == "3")
                     {
-                        if (temp3 == null)
+                        if (temp3 == null && !room3InUse)
                         {
                             //Player 1 connects. Wait for player 2.
                             temp3 = thisPlayer;
@@ -252,7 +255,7 @@ public class NetworkedServer : MonoBehaviour
                             SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.GameInitialize + "," + temp3.username, thisPlayer.playerID);
                             //Notify P1 that it's their turn.
                             SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.CurrentTurn + "," + room3.TopLeft.status + "," + room3.TopMiddle.status + "," + room3.TopRight.status + "," + room3.MiddleLeft.status + "," + room3.Middle.status + "," + room3.MiddleRight.status + "," + room3.BottomLeft.status + "," + room3.BottomMiddle.status + "," + room3.BottomRight.status + "", temp3.playerID);
-                            temp3 = null;
+                            
                             thisPlayer = null;
                             room3InUse = true;
                         }
