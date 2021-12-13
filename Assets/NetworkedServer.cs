@@ -1,3 +1,8 @@
+//Notes for Clean Code assignment:
+//Removed "Replay Choice" class and made replay function use GameTile instead - which was already being used for other purposes
+//Replay function for each room fixed
+//Added support for matches to tie (Stalemate)
+
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
@@ -35,9 +40,9 @@ public class NetworkedServer : MonoBehaviour
     bool room2SpectatorsPresent = false;
     bool room3SpectatorsPresent = false;
 
-    Queue<ReplayChoice> replayOrder1 = new Queue<ReplayChoice>();
-    Queue<ReplayChoice> replayOrder2 = new Queue<ReplayChoice>();
-    Queue<ReplayChoice> replayOrder3 = new Queue<ReplayChoice>();
+    Queue<GameTile> replayOrder1 = new Queue<GameTile>();
+    Queue<GameTile> replayOrder2 = new Queue<GameTile>();
+    Queue<GameTile> replayOrder3 = new Queue<GameTile>();
 
     // Start is called before the first frame update
     void Start()
@@ -53,6 +58,8 @@ public class NetworkedServer : MonoBehaviour
         room1Spectators = new LinkedList<PlayerAccount>();
         room2Spectators = new LinkedList<PlayerAccount>();
         room3Spectators = new LinkedList<PlayerAccount>();
+
+        Debug.Log("Start");
     }
 
     // Update is called once per frame
@@ -351,6 +358,7 @@ public class NetworkedServer : MonoBehaviour
                 
             }
 
+            //Player sent message
             if (gameSignifier == ClientToServerGameSignifiers.Message)
             {
                 string message = csv[2];
@@ -382,6 +390,7 @@ public class NetworkedServer : MonoBehaviour
 
             }
 
+            //Begin replay of previous game
             if (gameSignifier == ClientToServerGameSignifiers.Replay)
             {
                 if (room1InUse)
@@ -421,21 +430,21 @@ public class NetworkedServer : MonoBehaviour
         {
             if (room1.player1.playerID == player.playerID || room1.player2.playerID == player.playerID)
             {
-                replayOrder1.Enqueue(new ReplayChoice(choice, playerNum));
+                replayOrder1.Enqueue(new GameTile(playerNum, choice));
             }
         }
         if (room2InUse)
         {
             if (room2.player1.playerID == player.playerID || room2.player2.playerID == player.playerID)
             {
-                replayOrder1.Enqueue(new ReplayChoice(choice, playerNum));
+                replayOrder2.Enqueue(new GameTile(playerNum, choice));
             }
         }
         if (room3InUse)
         {
             if (room3.player1.playerID == player.playerID || room3.player2.playerID == player.playerID)
             {
-                replayOrder1.Enqueue(new ReplayChoice(choice, playerNum));
+                replayOrder3.Enqueue(new GameTile(playerNum, choice));
             }
         }
 
@@ -454,7 +463,6 @@ public class NetworkedServer : MonoBehaviour
             {
                 SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.RefreshUI + "," + room.TopLeft.status + "," + room.TopMiddle.status + "," + room.TopRight.status + "," + room.MiddleLeft.status + "," + room.Middle.status + "," + room.MiddleRight.status + "," + room.BottomLeft.status + "," + room.BottomMiddle.status + "," + room.BottomRight.status + "", pa.playerID);
             }
-
         }
         if(room3SpectatorsPresent && roomID == 3)
         {
@@ -483,6 +491,13 @@ public class NetworkedServer : MonoBehaviour
                 SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.OpponentWon + "," + room.player2.username + " won!", room.player1.playerID);
                 SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.YouWon + "," + room.player2.username + " won!", room.player2.playerID);
             }
+            else if (winCheck == 3) //Stalemate
+            {
+                SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.RefreshUI + "," + room.TopLeft.status + "," + room.TopMiddle.status + "," + room.TopRight.status + "," + room.MiddleLeft.status + "," + room.Middle.status + "," + room.MiddleRight.status + "," + room.BottomLeft.status + "," + room.BottomMiddle.status + "," + room.BottomRight.status + "", room.player1.playerID);
+                SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.RefreshUI + "," + room.TopLeft.status + "," + room.TopMiddle.status + "," + room.TopRight.status + "," + room.MiddleLeft.status + "," + room.Middle.status + "," + room.MiddleRight.status + "," + room.BottomLeft.status + "," + room.BottomMiddle.status + "," + room.BottomRight.status + "", room.player2.playerID);
+                SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.Stalemate + "," + "Tie!", room.player1.playerID);
+                SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.Stalemate + "," + "Tie!", room.player2.playerID);
+            }
         }
         else //No win, continue game
         {
@@ -497,7 +512,8 @@ public class NetworkedServer : MonoBehaviour
         }
     }
 
-    public void ReplayPrevGame(GameRoom room, Queue<ReplayChoice> replayQueue)
+    //Runs through replay queue of previous game
+    public void ReplayPrevGame(GameRoom room, Queue<GameTile> replayQueue)
     {
         room.TopLeft.status = 0;
         room.TopMiddle.status = 0;
@@ -596,20 +612,23 @@ public class NetworkedServer : MonoBehaviour
         room.P1Turn = !room.P1Turn;
     }
 
-    IEnumerator PlayReplay(Queue<ReplayChoice> replayQueue, GameRoom room)
+    //Coroutine for game replay
+    IEnumerator PlayReplay(Queue<GameTile> replayQueue, GameRoom room)
     {
-        ReplayChoice currentTile;
-        Debug.Log(replayQueue.Count);
+        Queue<GameTile> tempQueue = replayQueue;
+        GameTile currentTile;
+        Debug.Log(tempQueue.Count);
 
-        while (replayQueue.Count > 0)
+        while (tempQueue.Count > 0)
         {
-            currentTile = replayQueue.Dequeue();
+            currentTile = tempQueue.Dequeue();
             UpdateBoard(room, currentTile.tileNum, currentTile.status);
             SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.RefreshUI + "," + room.TopLeft.status + "," + room.TopMiddle.status + "," + room.TopRight.status + "," + room.MiddleLeft.status + "," + room.Middle.status + "," + room.MiddleRight.status + "," + room.BottomLeft.status + "," + room.BottomMiddle.status + "," + room.BottomRight.status + "", room.player1.playerID);
             SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.RefreshUI + "," + room.TopLeft.status + "," + room.TopMiddle.status + "," + room.TopRight.status + "," + room.MiddleLeft.status + "," + room.Middle.status + "," + room.MiddleRight.status + "," + room.BottomLeft.status + "," + room.BottomMiddle.status + "," + room.BottomRight.status + "", room.player2.playerID);
-            yield return new WaitForSeconds(3);
+            yield return new WaitForSeconds(1);
         }
 
+        //GAME ENDS IN WIN
         int winCheck = room.CheckGameWin();
         if (winCheck != 0) //If win condition met
         {
@@ -628,6 +647,13 @@ public class NetworkedServer : MonoBehaviour
                 SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.RefreshUI + "," + room.TopLeft.status + "," + room.TopMiddle.status + "," + room.TopRight.status + "," + room.MiddleLeft.status + "," + room.Middle.status + "," + room.MiddleRight.status + "," + room.BottomLeft.status + "," + room.BottomMiddle.status + "," + room.BottomRight.status + "", room.player2.playerID);
                 SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.OpponentWon + "," + room.player2.username + " won!", room.player1.playerID);
                 SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.YouWon + "," + room.player2.username + " won!", room.player2.playerID);
+            }
+            else if (winCheck == 3) //Stalemate
+            {
+                SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.RefreshUI + "," + room.TopLeft.status + "," + room.TopMiddle.status + "," + room.TopRight.status + "," + room.MiddleLeft.status + "," + room.Middle.status + "," + room.MiddleRight.status + "," + room.BottomLeft.status + "," + room.BottomMiddle.status + "," + room.BottomRight.status + "", room.player1.playerID);
+                SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.RefreshUI + "," + room.TopLeft.status + "," + room.TopMiddle.status + "," + room.TopRight.status + "," + room.MiddleLeft.status + "," + room.Middle.status + "," + room.MiddleRight.status + "," + room.BottomLeft.status + "," + room.BottomMiddle.status + "," + room.BottomRight.status + "", room.player2.playerID);
+                SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.Stalemate + "," + "Tie!", room.player1.playerID);
+                SendMessageToClient(ServerToClientStateSignifiers.Game + "," + ServerToClientGameSignifiers.Stalemate + "," + "Tie!", room.player2.playerID);
             }
         }
     }
@@ -674,15 +700,15 @@ public class GameRoom
 
         P1Turn = true;
 
-        TopLeft = new GameTile(0);
-        TopMiddle = new GameTile(0);
-        TopRight = new GameTile(0);
-        MiddleLeft = new GameTile(0);
-        Middle = new GameTile(0);
-        MiddleRight = new GameTile(0);
-        BottomLeft = new GameTile(0);
-        BottomMiddle = new GameTile(0);
-        BottomRight = new GameTile(0);
+        TopLeft = new GameTile(0, 1);
+        TopMiddle = new GameTile(0, 2);
+        TopRight = new GameTile(0, 3);
+        MiddleLeft = new GameTile(0, 4);
+        Middle = new GameTile(0, 5);
+        MiddleRight = new GameTile(0, 6);
+        BottomLeft = new GameTile(0, 7);
+        BottomMiddle = new GameTile(0, 8);
+        BottomRight = new GameTile(0, 9);
     }
 
     public int CheckGameWin()
@@ -783,6 +809,13 @@ public class GameRoom
                 return 2;
             }
         }
+        //Stalemate
+        if (TopLeft.status != 0 && TopMiddle.status != 0 && TopRight.status != 0 && MiddleLeft.status != 0 &&
+            Middle.status != 0 && MiddleRight.status != 0 && BottomLeft.status != 0 && BottomMiddle.status != 0 &&
+            BottomRight.status != 0)
+        {
+            return 3;
+        }
         //No Win
         return 0;
     }
@@ -795,21 +828,11 @@ public class GameTile
     //1 = X
     //2 = O
     public int status;
-    public GameTile(int tileStatus)
+    public int tileNum;
+    public GameTile(int tileStatus, int num)
     {
         status = tileStatus;
-    }
-}
-
-public class ReplayChoice
-{
-    public int tileNum;
-    public int status;
-
-    public ReplayChoice(int tile, int player)
-    {
-        tileNum = tile;
-        status = player;
+        tileNum = num;
     }
 }
 
@@ -874,6 +897,8 @@ public static class ServerToClientGameSignifiers
     public const int RefreshUI = 4;
 
     public const int Message = 5;
+
+    public const int Stalemate = 6;
 
     public const int GameInitialize = 9;
 
